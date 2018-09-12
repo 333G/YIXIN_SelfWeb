@@ -1,0 +1,499 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>UpLoadMappingFile</title>
+    <link rel="stylesheet" href="../Css/Bootstrap/bootstrap.min.css" />
+    <script src="../Scripts/libs/jquery2.0.min.js"></script>
+    <script src="../Scripts/libs/vue.js"></script>
+    <script type="text/javascript" src="../Scripts/VueElement/pgBase.js" defer></script>
+    <script type="text/javascript" src="../Scripts/VueElement/Upload.js" defer></script>
+
+    <script type="text/javascript" src="../Scripts/libs/jquery.min.js"></script>
+    <script type="text/javascript" src="../Scripts/libs/jqueryui/core.js"></script>
+    <script type="text/javascript" src="../Scripts/libs/jqueryui/datepicker.js"></script>
+    <script type="text/javascript" src="../Scripts/Times/tooltip.js"></script>
+    <script type="text/javascript" src="../Scripts/Times/popover.js"></script>
+    <script type="text/javascript" src="../Scripts/libs/underscore.js"></script>
+    <script type="text/javascript" src="../Scripts/Times/utility.js"></script>
+    <script type="text/javascript" src="../Scripts/Times/table.js"></script>
+
+    <script type="text/javascript">
+        window.onload = function () {
+            Vue.config.productionTip = false;
+            //UTL.$loadJs.path('http://localhost/caesar/');
+
+            var vuedata =
+                new Vue({
+                    el: '#mappingbox',
+                    data: {
+                        loaded: true,
+                        isinputshow: false,
+                        mappingdata: [],
+                        txtSearch_CompanyName: '',
+                        textSearch_Emailcontent: '',
+                        txtSearch_ClassName: '',
+                        textSearch_DateStart: '',
+                        textSearch_DateEnd: '',
+                        uploadresult: '',
+                        uploadpath: '',
+                        uploadstate: 0,
+                        uploadfilename: '',
+                        countstring: '',
+
+                        input_CompanyName: '',
+                        input_ClassName: '',
+                        input_FailedReason: '',
+                        input_FailedType: '',
+                        input_Result: '',
+                        input_WeakEndingDate: '',
+                        input_FileType: 0,
+
+                        filetypeselects: [
+                            { value: "TXT" },
+                            { value: "XLS" },
+                            { value: "PDF" },
+                            { value: "XML" },
+                            { value: "CSV" },
+                        ],
+                    },
+                    mounted: function () {
+                        var that = this;
+                        this.$nextTick(function () {
+                            var today = new Date();
+                            var intyears = today.getFullYear();
+                            var intmouths = today.getMonth() + 1;
+                            var intdays = today.getDate();
+                            years = intyears + "-";
+                            if (intmouths < 10) {
+                                months = "0" + intmouths + "-";
+                            } else {
+                                months = intmouths + "-";
+                            }
+                            if (intdays < 10) {
+                                days = "0" + intdays;
+                            } else {
+                                days = intdays;
+                            }
+                            timeString = years + months + days;
+                            that.textSearch_DateEnd = timeString;
+                            that.textSearch_DateStart = timeString;
+                            //var today = new Date();
+                            //var intyears = today.getFullYear();
+                            //var intmouths = today.getMonth() + 1;
+                            //var intdays = today.getDate() - 1;
+                            //years = intyears + "-";
+                            //if (intmouths < 10) {
+                            //    months = "0" + intmouths + "-";
+                            //} else {
+                            //    months = intmouths + "-";
+                            //}
+                            //if (intdays < 10) {
+                            //    days = "0" + intdays;
+                            //} else {
+                            //    days = intdays;
+                            //}
+                            //timeString = years + months + days;
+                            //that.textSearch_DateStart = timeString;
+
+                            that.getmappinglistData();
+                        })
+                    },
+                    methods: {
+
+                        search: function () {
+                            if (this.textSearch_DateEnd == "" && this.textSearch_DateStart == "" && this.txtSearch_CompanyName == "" && this.textSearch_Emailcontent == "" && this.txtSearch_ClassName == "") {
+                                alert("Please select some item!");
+                                return false;
+                            }
+                            else
+                                this.getmappinglistData();
+                        },
+
+                        reset: function () {
+                            this.txtSearch_CompanyName = '';
+                            this.textSearch_Emailcontent = '';
+                            this.txtSearch_ClassName = '';
+                            this.textSearch_DateStart = '';
+                            this.textSearch_DateEnd = '';
+                        },
+
+                        uploadxls: function () {
+                            var that = this;
+
+                            let config = { headers: { 'Content-Type': 'multipart/form-data' } };
+                            var Filename = that.uploadfilename;
+                            if (Filename == undefined || Filename == "") {
+                                alert("请选择上传日期！")
+                                return false;
+                            }
+                            if (!confirm("确认要上传吗？")) {
+                                return false;
+                            }
+
+                            this.uploadstate = 1;
+                            console.log(File);
+                            utl.makeRequestRc('OnlineMappingRP', 'UpLoadFile', { Filename: Filename, File: File }, null).done(function (res) {
+                                //alert("SuccessResponse");
+                                if (res.result.Error != undefined && res.result.Error != "") {
+                                    alert(res.result.Error + "请重试或联系管理员.");
+                                    that.uploadstate = -1;
+                                    return false;
+                                }
+                                this.uploadresult = res.result.result;
+                                //alert(this.uploadresult);
+
+                                that.uploadstate = 0;
+                                //console.log(res.result);
+                                if (res.result.Info.length > 0) {
+                                    //console.log(res.result.Info);
+                                    alert("上传成功,共上传 " + res.result.Result + " 条数据.但是有错误:" + res.result.Info);
+                                    that.getmappinglistData();
+                                }
+                                else
+                                    alert("上传成功,共上传 " + res.result.Result + " 条数据.");
+                                location.reload();
+                            });
+                        },
+
+                        getFile: function (even) {
+                            var that = this;
+                            //console.log(even);
+                            that.uploadfilename = event.target.value;
+                        },
+
+                        getmappinglistData: function () {
+                            var that = this;
+                            utl.makeRequestRc('OnlineMappingRP', 'GetMappingListData', { txtSearch_CompanyName: this.txtSearch_CompanyName, textSearch_Emailcontent: this.textSearch_Emailcontent, txtSearch_ClassName: this.txtSearch_ClassName, textSearch_DateStart: this.textSearch_DateStart, textSearch_DateEnd: this.textSearch_DateEnd }, null).done(function (res) {
+                                var Errorinfo = res.result.Errorinfo;
+                                if (Errorinfo != null && Errorinfo != undefined && Errorinfo != "") {
+                                    alert("出现错误：" + Errorinfo);
+                                    return false;
+                                }
+                                var MappingDataList = res.result.type;
+                                that.mappingdata = MappingDataList;
+                                if (that.mappingdata == null)
+                                    that.Tblreset();
+                                else
+                                    that.getCount();
+                                //console.log(that.mappingdata);
+                                //alert(that.mappingdata.length);
+                            });
+                        },
+                        Tblreset: function () {
+                            this.mappingdata = [];
+                        },
+                        getCount: function () {
+                            var that = this;
+                            utl.makeRequestRc('OnlineMappingRP', 'GetCount', { txtSearch_CompanyName: this.txtSearch_CompanyName, textSearch_Emailcontent: this.textSearch_Emailcontent, txtSearch_ClassName: this.txtSearch_ClassName, textSearch_DateStart: this.textSearch_DateStart, textSearch_DateEnd: this.textSearch_DateEnd }, null).done(function (res) {
+                                var Errorinfo = res.result.Errorinfo;
+                                if (Errorinfo != null && Errorinfo != undefined && Errorinfo != "") {
+                                    alert("出现错误：" + Errorinfo);
+                                    return false;
+                                }
+                                that.countstring = res.result.type;
+                            });
+                        },
+
+                        showfile: function (DataF_ID, F_ID, CompanyName) {
+                            var that = this;
+                            if (DataF_ID > 0)
+                                window.open("/Caesar/OnlineMapping/OnlinePreview.aspx?DataF_ID=" + DataF_ID);
+                            else {
+
+                                if (!confirm("此邮件没有对应的文件，是否进行添加？")) {
+                                    return false;
+                                }
+                                utl.makeRequestRc('OnlineMappingRP', 'UploadData', { F_ID: F_ID, CompanyName: CompanyName }, null).done(function (res) {
+                                    var Error = res.result.Error;
+                                    if (Error != null && Error != undefined && Error != "") {
+                                        alert("出现错误：" + Error);
+                                        return false;
+                                    }
+                                    alert("添加成功");
+                                });
+                            }
+                            that.getmappinglistData();
+                        },
+                        refile: function (DataF_ID, F_ID, CompanyName) {
+                            var that = this;
+                            if (!confirm("此邮件已经有对应的文件，是否进行重新绑定文件？")) {
+                                return false;
+                            }
+                            utl.makeRequestRc('OnlineMappingRP', 'ReUploadData', { F_ID: F_ID, DataF_ID: DataF_ID, CompanyName: CompanyName }, null).done(function (res) {
+                                var Error = res.result.Error;
+                                if (Error != null && Error != undefined && Error != "") {
+                                    alert("出现错误：" + Error);
+                                    return false;
+                                }
+                                alert("操作成功。");
+                            });
+
+                            that.getmappinglistData();
+                        },
+
+                        changeClass: function (F_ID, F_ClassName) {
+                            var that = this;
+                            if (!confirm("确认修改类名？")) {
+                                return false;
+                            }
+                            utl.makeRequestRc('OnlineMappingRP', 'ChangeClassName', { F_ID: F_ID, F_ClassName: F_ClassName, }, null).done(function (res) {
+                                var Error = res.result.Error;
+                                if (Error != null && Error != undefined && Error != "") {
+                                    alert("出现错误：" + Error);
+                                    return false;
+                                }
+                                alert(res.result.Type);
+                            });
+                        },
+
+                        showinput: function () {
+
+                            if (!this.isinputshow) {
+                                this.isinputshow = true;
+                            }
+                            else
+                                this.isinputshow = false;
+                        },
+
+                        getFiletypeSelection: function (ele) {
+                            if (ele.target.value == "TXT")
+                                this.input_FileType = 0;
+                            else if (ele.target.value == "XLS")
+                                this.input_FileType = 1;
+                            else if (ele.target.value == "PDF")
+                                this.input_FileType = 2;
+                            else if (ele.target.value == "XML")
+                                this.input_FileType = 3;
+                            else if (ele.target.value == "CSV")
+                                this.input_FileType = 4;
+                        },
+
+                        Submitsingle: function () {
+                            utl.makeRequestRc('OnlineMappingRP', 'Submit', { input_CompanyName: this.input_CompanyName, input_ClassName: this.input_ClassName, input_FailedReason: this.input_FailedReason, input_FailedType: this.input_FailedType, input_Result: this.input_Result, input_WeakEndingDate: this.input_WeakEndingDate, input_FileType: this.input_FileType }, null).done(function (res) {
+                                //alert("SuccessResponse");
+                                if (res.result.Error != undefined && res.result.Error != "") {
+                                    //console.log(res.result);
+                                    if (res.result.Error == "Value cannot be null.\r\nParameter name: source") {
+                                        alert("添加成功但是未找到对应文件，请处理。");
+                                        return;
+                                    }
+                                    alert(res.result.Error + "请重试或联系管理员.");
+                                    return false;
+                                }
+                                else {
+                                    var Insert_FID = res.result.type;
+                                    if (Insert_FID > 0) {
+                                        alert("提交成功!")
+                                        this.mappingdata.push({ F_ID: res.result.type, CompanyName: input_CompanyName, F_ClassName: input_ClassName, F_FailedReason: F_FailedReason, F_FailedType: F_FailedType, F_Result: F_Result, F_WeakEndingDate: input_WeakEndingDate, F_FailedType: input_FileType });
+                                    }
+                                    else {
+                                        alert("插入数据库出现错误:" + Insert_FID);
+                                        return false;
+                                    }
+                                }
+                            })
+                        },
+                        addDebugImage: function (F_ID) {
+                            if (!confirm("确认上传文件？")) {
+                                return false;
+                            }
+                            let imgFile = $(this.$el).find('#imgLocal')[0].files[0];//取到上传的图片
+                            //console.log($(this.$el).find('#imgLocal')[0].files);//图片信息就在files[0]里面
+                            let postData = new FormData();
+                            postData.append('file', imgFile);
+                            postData.append('F_ID', F_ID);
+                            let application = window.location.pathname.split('/')[1];
+                            let url = window.location.protocol + '//' + window.location.host + '/' + application + '/CommonResponseCenter/HandlerAjax.ashx?med=OnlineMappingRP.GetImageAjax';
+                            var ajax = new XMLHttpRequest();
+                            ajax.open("post", url, true);
+                            ajax.onload = () => {
+
+                            };
+                            ajax.send(postData);
+                            alert(ajax.response);
+                            location.reload();
+                        },
+                        showDebugImage: function (F_ID) {
+                            var that = this;
+                            if (F_ID > 0)
+                                window.open("/Caesar/OnlineMapping/ShowDebugImage.aspx?F_ID=" + F_ID);
+                        },
+                        addtoChangedDetails: function (F_ID, F_ChangeDetails) {
+                            utl.makeRequestRc('OnlineMappingRP', 'ChangeDetails', { F_ChangeDetails: F_ChangeDetails, F_ID: F_ID }, null).done(function (res) {
+                                var Error = res.result.Error;
+                                if (Error != null && Error != undefined && Error != "") {
+                                    alert("出现错误：" + Error);
+                                    return false;
+                                }
+                                alert("修改成功");
+                            });
+
+                        },
+                        selectImg() {
+                            let form = document.getElementById('imgLocal');
+                        },
+                        DeleteItem: function (F_ID, DataF_ID, index) {
+                            var that = this;
+                            if (!confirm("警告删除操作可能会导致数据丢失，是否确认删除？")) {
+                                return false;
+                            }
+                            utl.makeRequestRc('OnlineMappingRP', 'Delete', { F_ID: F_ID, DataF_ID: DataF_ID }, null).done(function (res) {
+                                var Error = res.result.Error;
+                                if (Error != null && Error != undefined && Error != "") {
+                                    alert("出现错误：" + Error);
+                                    return false;
+                                }
+                                alert("删除成功");
+                            });
+                            that.MappingDataList.splice(index, 1);
+                        },
+                    },
+                });
+        };
+    </script>
+</head>
+<body>
+    <div id="mappingbox" style="height: 100%; display:none" v-show="loaded">
+        <form id="form1" role="form" style="text-align:center">
+            <hr>
+            <h3 class="text-warning">UPLOAD</h3>
+            <div class="form-group text-left">
+                <label for="UpLoad">UploadData :</label>
+                <input type="date" class="btn-warning btn-sm " @change="getFile">
+                <div v-if="uploadresult!=''">{{ uploadresult }}</div>
+                <div v-else><label class="text-warning" for="UpLoad">The selected date must be the same as the folder date.</label></div>
+                <input type="button" id="Btn_UploadFile" class="btn-primary" value="uploadfile" @click="uploadxls" />
+                <div class="text-warning" v-show="uploadstate==1">正在上传中.....</div>
+                <div class="text-danger" v-show="uploadstate==-1">上传失败.....</div>
+            </div>
+            <hr>
+            <div class="form-group "style="text-align:left">
+                <div class="">
+                    <label for="txtSearch_CompanyName">CompanyName:</label>
+                    <input id="txtSearch_CompanyName" v-model="txtSearch_CompanyName" type="text" placeholder="Company Name">
+                    <label for="txtSearch_ClassName">  ClassName:</label>
+                    <input id="txtSearch_ClassName" v-model="txtSearch_ClassName" type="text" placeholder="Class Name">
+                    <label for="textSearch_Emailcontent">  EmailContent:</label>
+                    <input id="textSearch_Emailcontent" v-model="textSearch_Emailcontent" type="text" placeholder="Email Content">
+                </div>
+                <hr />
+                <div class="">
+                    <label for="textSearch_DateStart">UploadDate From:</label>
+                    <input id="textSearch_DateStart" v-model="textSearch_DateStart" type="date" class="date-period" />
+                    <label>To:</label>
+                    <input id="textSearch_DateEnd" v-model="textSearch_DateEnd" type="date" class="date-period" />
+                    <input type="button" id="Btn_Search" class="btn-primary text-info btn-sm" value="Search" @click="search()" />
+                    <input type="button" id="Btn_Reset" class="btn-primary, text-danger btn-sm" value="Reset" @click="reset()" />
+                </div>
+            </div>
+            <hr />
+        </form>
+        <div>
+            <button @click="showinput">手动输入记录的模块</button>
+            <div v-show="isinputshow">
+                <table class="table table-bordered table-hover">
+                    <tr class="text-center">
+                        <th>Company Name</th>
+                        <th>Failed Reason</th>
+                        <th>Class Name</th>
+                        <th>Failed Type</th>
+                        <th>Result</th>
+                        <th>WeakEndingDate</th>
+
+                        <th>File Type</th>
+                    </tr>
+                    <tr class="text-left">
+                        <td> <input id="input_CompanyName" v-model="input_CompanyName" type="text" placeholder="Company Name"></td>
+                        <td><input id="input_FailedReason" v-model="input_FailedReason" type="text" placeholder="Failed Reason"></td>
+                        <td><input id="input_ClassName" v-model="input_ClassName" type="text" placeholder="Class Name"></td>
+                        <td><input id="input_FailedType" v-model="input_FailedType" type="text" placeholder="Failed Type"></td>
+                        <td><input id="input_Result" v-model="input_Result" type="text" placeholder="Result"></td>
+                        <td><input id="input_WeakEndingDate" v-model="input_WeakEndingDate" type="date">{{input_WeakEndingDate}}</td>
+
+                        <td>
+                            <select @change="getFiletypeSelection">
+                                <option v-for="items in filetypeselects" v-model="items.value"></option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr> <td colspan="9" class="text-right">提交：<button id="Btn_submit" class="btn-accept btn-sm" @click="Submitsingle()">提交信息 </button></td></tr>
+                </table>
+            </div>
+        </div>
+        <hr>
+        <table class="table table-bordered table-hover">
+            <caption class="h3 text-info text-center">MappingfileList</caption>
+            <tr class="text-center">
+                <th>No.</th>
+                <th>Company Name</th>
+                <th>Failed Reason</th>
+                <th>Class Name</th>
+                <th>Failed Type</th>
+                <th>Result</th>
+                <th>Upload Date</th>
+                <th>WeakEndingDate</th>
+                <th>File Type</th>
+                <th>Details</th>
+            </tr>
+            <tr class="text-left" v-for="(item,index) in mappingdata" :key="item.F_ID">
+                <td>
+                    {{index + 1}}
+                    <input type="button" @click="DeleteItem(item.F_ID,item.F_IshaveFile,index)" class="text-danger" value="删除">
+                </td>
+                <td>{{item.CompanyName}}</td>
+                <td><textarea class="tdTextCenter" style="resize:none;" readonly="readonly">{{item.F_FaildReason}}</textarea></td>
+                <td>
+                    <div>
+                        <input class="tdTextCenter" style="resize:none; height:200%" v-model="item.F_ClassName">
+                    </div>
+                    <button @click="changeClass(item.F_ID,item.F_ClassName)" class="bs-fix-btn-locality ">修改类名</button>
+                </td>
+                <td>{{item.F_DealType}}</td>
+                <td style="text-align:center;border:dashed;color:slateblue;">{{item.F_DealResult}}</td>
+                <td>{{item.F_UploadDate}}</td>
+                <td><input type="date" v-model="item.F_FileEndingDate"/>{{item.F_FileEndingDate}}</td>
+
+                <td>
+                    <button v-if="(item.F_FileType==0)" @click="showfile(item.F_IshaveFile,item.F_ID ,item.CompanyName)" class="bs-fix-btn-locality ">TXT</button>
+                    <button v-if="(item.F_FileType==1)" @click="showfile(item.F_IshaveFile,item.F_ID ,item.CompanyName)" class="bs-fix-btn-locality ">XLS</button>
+                    <button v-if="(item.F_FileType==2)" @click="showfile(item.F_IshaveFile,item.F_ID ,item.CompanyName)" class="bs-fix-btn-locality ">PDF</button>
+                    <button v-if="(item.F_FileType==3)" @click="showfile(item.F_IshaveFile,item.F_ID ,item.CompanyName)" class="bs-fix-btn-locality ">XML</button>
+                    <button v-if="(item.F_FileType==4)" @click="showfile(item.F_IshaveFile,item.F_ID ,item.CompanyName)" class="bs-fix-btn-locality ">CSV</button>
+                    <button v-if="(item.F_FileType<0)" @click="showfile(item.F_IshaveFile,item.F_ID ,item.CompanyName)" class="bs-fix-btn-locality ">CREATE</button>
+                    <div v-show="(item.F_IshaveFile <= 0 )" class="text-warning" style="cursor:auto" @click="showfile(item.F_IshaveFile,item.F_ID ,item.CompanyName)">无文件</div>
+                    <div v-show="(item.F_IshaveFile > 0 )" class="text-nowrap" style="cursor:alias" @click="refile(item.F_IshaveFile,item.F_ID ,item.CompanyName)">重绑定</div>
+                </td>
+                <td>
+                    <div>
+                        <textarea class="fulfill_cancel" style="resize:none;width:100%;height:100%;" v-model="item.F_ChangeDetails"></textarea>
+                    </div>
+                    <input class="input-loc-img" name="imgLocal" id="imgLocal" type='file' accept="image/*" @change="selectImg" />
+                    <button v-if="item.F_DetailImg != '' && item.F_DetailImg != null" @click="showDebugImage(item.F_ID)" class="text-success">查看图片</button>
+                    <button v-else @click="addDebugImage(item.F_ID)" class="text-warning">添加图片</button>
+                    <button @click="addtoChangedDetails(item.F_ID,item.F_ChangeDetails)" style="float:right">修改</button>
+                </td>
+            </tr>
+            <tr v-show="mappingdata.length!=0">
+                <td colspan="10" class="text-right">
+                    <button class="btn-preview ui-button-text-icon-secondary" @click="getCount()">{{countstring}}</button>
+                </td>
+            </tr>
+            <tr v-show="mappingdata.length==0">
+                <td colspan="10" class="text-center text-muted">
+                    <p>No Data Found.......</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <!--模态框-->
+    <div role="dialog" class="modal fade" tabindex="-1" id="layer1" aria-labelledby="myLargeModalLabel">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

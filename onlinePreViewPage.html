@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>PreViewPage</title>
+    <link rel="stylesheet" href="../Css/Bootstrap/bootstrap.min.css" />
+    <script src="../Scripts/libs/jquery2.0.min.js"></script>
+    <script src="../Scripts/libs/vue.js"></script>
+    <script type="text/javascript" src="../Scripts/VueElement/pgBase.js" defer></script>
+    <script type="text/javascript" src="../Scripts/VueElement/Upload.js" defer></script>
+
+    <script type="text/javascript" src="../Scripts/libs/jquery.min.js"></script>
+    <script type="text/javascript" src="../Scripts/libs/jqueryui/core.js"></script>
+    <script type="text/javascript" src="../Scripts/libs/jqueryui/datepicker.js"></script>
+    <script type="text/javascript" src="../Scripts/Times/tooltip.js"></script>
+    <script type="text/javascript" src="../Scripts/Times/popover.js"></script>
+    <script type="text/javascript" src="../Scripts/libs/underscore.js"></script>
+    <script type="text/javascript" src="../Scripts/Times/utility.js"></script>
+    <script type="text/javascript" src="../Scripts/Times/table.js"></script>
+    
+    <script type="text/javascript">
+      
+        window.onload = function () {
+            Request = {
+                QueryString: function (item) {
+                    var svalue = location.search.match(new RegExp("[\?\&]" + item + "=([^\&]*)(\&?)", "i"));
+                    return svalue ? svalue[1] : svalue;
+                }
+            }
+            var F_ID = Request.QueryString("F_ID");
+
+            var vuedata =
+                new Vue({
+                    el: '#databox',
+                    data: {
+                        F_ID: F_ID,
+                        Data: [],
+                        FileType:-1,
+                    },
+
+                    mounted: function () {
+                        this.getMailData();
+                    },
+
+                    methods: {
+                        getMailData: function () {                        
+                            var that = this;
+                            utl.makeRequestRc('OnlineMappingRP', 'GetMailData', { DataF_ID:that.F_ID }, null).done(function (res) {
+                                if (res.result.Errorinfo != undefined && res.result.Errorinfo != "") {
+                                    alert(res.result.Errorinfo + "请重试或联系管理员.");
+                                    return false;
+                                }
+                                else {
+                                    console.log(res.result.type);
+                                    that.Data = res.result.type[0].F_FileData;
+                                    that.FileType = res.result.type[0].F_FileType;
+                                }
+                            });
+                        },
+                    }
+                });
+        }
+    </script>
+</head>
+<body>
+    <div id="databox">
+        <textarea v-show="FileType == 0" v-model="Data">{{Data}} TXT</textarea>
+        <textarea v-show="FileType == 1" v-model="Data">{{Data}} XLS</textarea>
+        <textarea v-show="FileType == 2" v-model="Data">{{Data}} PDF</textarea>
+        <textarea v-show="FileType == 3" v-model="Data">{{Data}} XML</textarea>
+        <textarea v-show="FileType == 4" v-model="Data">{{Data}} CVS</textarea>
+
+    </div>
+</body>
+</html>
