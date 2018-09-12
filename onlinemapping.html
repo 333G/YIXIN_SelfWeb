@@ -413,7 +413,7 @@
 
                         <td>
                             <select @change="getFiletypeSelection">
-                                <option v-for="items in filetypeselects" v-model="items.value"></option>
+                                <option v-for=" (item,index) in filetypeselects" v-model="item.value">{{item.value}}</option>
                             </select>
                         </td>
                     </tr>
@@ -469,9 +469,15 @@
                         <textarea class="fulfill_cancel" style="resize:none;width:100%;height:100%;" v-model="item.F_ChangeDetails"></textarea>
                     </div>
                     <input class="input-loc-img" name="imgLocal" id="imgLocal" type='file' accept="image/*" @change="selectImg" />
-                    <button v-if="item.F_DetailImg != '' && item.F_DetailImg != null" @click="showDebugImage(item.F_ID)" class="text-success">查看图片</button>
-                    <button v-else @click="addDebugImage(item.F_ID)" class="text-warning">添加图片</button>
-                    <button @click="addtoChangedDetails(item.F_ID,item.F_ChangeDetails)" style="float:right">修改</button>
+                    <div v-if="item.F_DetailImg != '' && item.F_DetailImg != null">
+                        <button @click="showDebugImage(item.F_ID)" class="text-success">查看图片</button>
+                        <button @click="addDebugImage(item.F_ID)" class="text-warning">修改图片</button>
+                        <button @click="addtoChangedDetails(item.F_ID,item.F_ChangeDetails)" style="float:right">修改</button>
+                    </div>
+                    <div v-else>
+                        <button @click="addtoChangedDetails(item.F_ID,item.F_ChangeDetails)" style="float:right">修改</button>
+                        <button @click="addDebugImage(item.F_ID)" class="text-warning">添加图片</button>
+                    </div>
                 </td>
             </tr>
             <tr v-show="mappingdata.length!=0">
