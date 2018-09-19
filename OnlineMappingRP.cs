@@ -127,7 +127,7 @@ namespace CommonResponseCenter.Responser
                                     if (sheet.GetRow(i).GetCell(j) != null)
                                         mailInfo.F_ChangeDetails = sheet.GetRow(i).GetCell(j).ToString();
                                     else
-                                        mailInfo.F_FileEndingDate = DateTime.MinValue;
+                                        mailInfo.F_ChangeDetails = "";
                                 }
 
                             }
@@ -759,7 +759,7 @@ namespace CommonResponseCenter.Responser
                 , new SqlParameter("@F_LastModifiedTime", (mailInfo.F_LastModifiedTime != DateTime.MinValue ? mailInfo.F_LastModifiedTime : new DateTime(1900, 1, 1)))
                 , new SqlParameter("@F_LastModifiedUser", (mailInfo.F_LastModifiedUser == null ? "" : mailInfo.F_LastModifiedUser))
                 , new SqlParameter("@F_IshaveFile", mailInfo.F_IshaveFile)
-                , new SqlParameter("@F_ChangeDetails",mailInfo.F_ChangeDetails)
+                , new SqlParameter("@F_ChangeDetails", (mailInfo.F_ChangeDetails == null ? "" : mailInfo.F_ChangeDetails))
                 );
             return i;
         }
