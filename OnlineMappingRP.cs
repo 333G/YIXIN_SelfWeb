@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Web;
 
 namespace CommonResponseCenter.Responser
@@ -25,7 +26,7 @@ namespace CommonResponseCenter.Responser
             try
             {
                 var Filename = PostObjectDateValue("Filename");
-                var File = PostObjectValue("File");
+                //var File = PostObjectValue("File");
                 DateTime dateTime = Convert.ToDateTime(Filename);
                 string year = dateTime.Year.ToString();
                 string month = dateTime.Month.ToString();
@@ -58,7 +59,7 @@ namespace CommonResponseCenter.Responser
                     if (row == null) continue;
 
                     int firstCellNum = row.FirstCellNum;
-                    int lastCellNum = row.LastCellNum;
+                    int lastCellNum = 7;
                     if (firstCellNum == lastCellNum) continue;
 
                     //dt = new DataTable(sheet.SheetName);
@@ -66,81 +67,96 @@ namespace CommonResponseCenter.Responser
                     //{
                     //    dt.Columns.Add(row.GetCell(i).StringCellValue, typeof(string));
                     //}
-
-                    for (int i = 0; i <= sheet.LastRowNum - 1; i++)
+                    try
                     {
-                        //DataRow newRow = dt.Rows.Add();
-                        MailInfo mailInfo = new MailInfo();
-                        mailInfo.F_UploadDate = now.Date;
-                        mailInfo.F_IshaveFile = 0;
-                        for (int j = firstCellNum; j < lastCellNum; j++)
+                        for (int i = 0; i <= sheet.LastRowNum; i++)
                         {
-                            //newRow[j] = sheet.GetRow(i).GetCell(j).StringCellValue;
-                            if (j == firstCellNum)
+                            //DataRow newRow = dt.Rows.Add();
+                            MailInfo mailInfo = new MailInfo();
+                            mailInfo.F_UploadDate = now.Date;
+                            mailInfo.F_IshaveFile = 0;
+                            for (int j = firstCellNum; j < lastCellNum; j++)
                             {
-                                if (sheet.GetRow(i).GetCell(j) != null)
-                                    mailInfo.CompanyName = (sheet.GetRow(i).GetCell(j).ToString().Trim());
-                                else
-                                    mailInfo.CompanyName = "";
-                                if (mailInfo.CompanyName[mailInfo.CompanyName.Length - 1] == '.')
-                                    mailInfo.CompanyName = mailInfo.CompanyName.Substring(0, mailInfo.CompanyName.Length - 1);
+                                //newRow[j] = sheet.GetRow(i).GetCell(j).StringCellValue;
+                                if (j == firstCellNum)
+                                {
+                                    if (sheet.GetRow(i).GetCell(j) != null)
+                                        mailInfo.CompanyName = (sheet.GetRow(i).GetCell(j).ToString().Trim());
+                                    else
+                                        mailInfo.CompanyName = "";
+                                    if (mailInfo.CompanyName[mailInfo.CompanyName.Length - 1] == '.')
+                                        mailInfo.CompanyName = mailInfo.CompanyName.Substring(0, mailInfo.CompanyName.Length - 1);
+                                }
+                                else if (j == firstCellNum + 1)
+                                {
+                                    if (sheet.GetRow(i).GetCell(j) != null)
+                                        mailInfo.F_FaildReason = sheet.GetRow(i).GetCell(j).ToString();
+                                    else
+                                        mailInfo.F_FaildReason = "";
+                                }
+                                else if (j == firstCellNum + 2)
+                                {
+                                    if (sheet.GetRow(i).GetCell(j) != null)
+                                        mailInfo.F_ClassName = sheet.GetRow(i).GetCell(j).ToString().Replace(".", "");
+                                    else
+                                        mailInfo.F_ClassName = "";
+                                }
+                                else if (j == firstCellNum + 3)
+                                {
+                                    if (sheet.GetRow(i).GetCell(j) != null)
+                                        mailInfo.F_DealType = sheet.GetRow(i).GetCell(j).ToString();
+                                    else
+                                        mailInfo.F_DealType = "";
+                                }
+                                else if (j == firstCellNum + 4)
+                                {
+                                    if (sheet.GetRow(i).GetCell(j) != null)
+                                        mailInfo.F_DealResult = sheet.GetRow(i).GetCell(j).ToString();
+                                    else
+                                        mailInfo.F_DealResult = "";
+                                }
+                                else if (j == firstCellNum + 5)
+                                {
+                                    if (sheet.GetRow(i).GetCell(j) != null)
+                                        mailInfo.F_FileEndingDate = sheet.GetRow(i).GetCell(j).ToString().ToDateTime().Date;
+                                    else
+                                        mailInfo.F_FileEndingDate = DateTime.MinValue;
+                                }
+                                else if (j == firstCellNum + 6)
+                                {
+                                    if (sheet.GetRow(i).GetCell(j) != null)
+                                        mailInfo.F_ChangeDetails = sheet.GetRow(i).GetCell(j).ToString();
+                                    else
+                                        mailInfo.F_FileEndingDate = DateTime.MinValue;
+                                }
+
                             }
-                            else if (j == firstCellNum + 1)
+                            if (mailInfo.F_ClassName.Length > 3)
+                                if (mailInfo.F_ClassName.Substring(0, 3).ToUpper().IndexOf("XLS") != -1)
+                                    mailInfo.F_FileType = 1;
+                                else if (mailInfo.F_ClassName.Substring(0, 3).ToUpper().IndexOf("PDF") != -1)
+                                    mailInfo.F_FileType = 2;
+                                else if (mailInfo.F_ClassName.Substring(0, 3).ToUpper().IndexOf("XML") != -1)
+                                    mailInfo.F_FileType = 3;
+                                else if (mailInfo.F_ClassName.Substring(0, 3).ToUpper().IndexOf("CVS") != -1)
+                                    mailInfo.F_FileType = 4;
+                                else mailInfo.F_FileType = 0;
+                            if (mailInfo.F_DealResult.ToUpper().IndexOf("PENDING") != -1)
                             {
-                                if (sheet.GetRow(i).GetCell(j) != null)
-                                    mailInfo.F_FaildReason = sheet.GetRow(i).GetCell(j).ToString();
-                                else
-                                    mailInfo.F_FaildReason = "";
+                                mailInfo.F_FileType = -1;
+                                mailInfo.F_ClassName = "";
                             }
-                            else if (j == firstCellNum + 2)
-                            {
-                                if (sheet.GetRow(i).GetCell(j) != null)
-                                    mailInfo.F_ClassName = sheet.GetRow(i).GetCell(j).ToString().Replace(".", "");
-                                else
-                                    mailInfo.F_ClassName = "";
-                            }
-                            else if (j == firstCellNum + 3)
-                            {
-                                if (sheet.GetRow(i).GetCell(j) != null)
-                                    mailInfo.F_DealType = sheet.GetRow(i).GetCell(j).ToString();
-                                else
-                                    mailInfo.F_DealType = "";
-                            }
-                            else if (j == firstCellNum + 4)
-                            {
-                                if (sheet.GetRow(i).GetCell(j) != null)
-                                    mailInfo.F_DealResult = sheet.GetRow(i).GetCell(j).ToString();
-                                else
-                                    mailInfo.F_DealResult = "";
-                            }
-                            else if (j == firstCellNum + 5)
-                            {
-                                if (sheet.GetRow(i).GetCell(j) != null)
-                                    mailInfo.F_FileEndingDate = sheet.GetRow(i).GetCell(j).ToString().ToDateTime().Date;
-                                else
-                                    mailInfo.F_FileEndingDate = DateTime.MinValue;
-                            }
+                            MailInfoList.Add(mailInfo);
                         }
-                        if (mailInfo.F_ClassName.Substring(0, 3).ToUpper().IndexOf("XLS") != -1)
-                            mailInfo.F_FileType = 1;
-                        else if (mailInfo.F_ClassName.Substring(0, 3).ToUpper().IndexOf("PDF") != -1)
-                            mailInfo.F_FileType = 2;
-                        else if (mailInfo.F_ClassName.Substring(0, 3).ToUpper().IndexOf("XML") != -1)
-                            mailInfo.F_FileType = 3;
-                        else if (mailInfo.F_ClassName.Substring(0, 3).ToUpper().IndexOf("CVS") != -1)
-                            mailInfo.F_FileType = 4;
-                        else mailInfo.F_FileType = 0;
-                        if (mailInfo.F_DealResult.ToUpper().IndexOf("PENDING") != -1)
-                        {
-                            mailInfo.F_FileType = -1;
-                            mailInfo.F_ClassName = "";
-                        }
-                        MailInfoList.Add(mailInfo);
+                    }
+                    catch
+                    {
+
                     }
                     //ds.Tables.Add(dt);
                 }
 
-                //SqlConnection conn = new SqlConnection(SqlHelper.CONNECTSTRING);
+                //SqlConnection conn = new SqlConnection(SqlHelper.MyCONNECTSTRING);
                 if (MailInfoList.Count > 0)
                 {
                     try
@@ -214,7 +230,7 @@ namespace CommonResponseCenter.Responser
                                 {
                                     File file = new File();
                                     file.Path = rootfilelist[j];
-                                    file.Type = rootfilelist[j].Substring(rootfilelist[j].LastIndexOf("." + 1)).ToUpper();
+                                    file.Type = rootfilelist[j].Substring(rootfilelist[j].LastIndexOf(".") + 1).ToUpper();
                                     file.isbeenread = false;
                                     filelist.Add(file);
                                 }
@@ -227,10 +243,10 @@ namespace CommonResponseCenter.Responser
 
                         foreach (var item in MailInfoList)
                         {
-                            item.CompanyID = getCompanyIdbyName(item.CompanyName);
+                            item.CompanyID = GetCompanyIdbyNameDB(item.CompanyName);
                             item.F_LastModifiedTime = DateTime.Now;
                             item.F_LastModifiedUser = "Admin";
-                            long InsertId = Inserttotable(item);
+                            long InsertId = InserttotableDB(item);
                             if (InsertId > 0)
                             {
                                 //插入到另一个数据表中
@@ -246,13 +262,13 @@ namespace CommonResponseCenter.Responser
                                     mailData.F_FileData = fileTypeAndData.Data;
                                     mailData.F_FileType = fileTypeAndData.Type;
                                 }
-                                else if (item.F_DealType.ToUpper().IndexOf("NEW") != -1)
+                                else if (item.F_DealType.ToUpper() == "NEW")
                                 {
                                     var fileTypeAndData = GetFileDataAndType(item, NewFilelist);
                                     mailData.F_FileData = fileTypeAndData.Data;
                                     mailData.F_FileType = fileTypeAndData.Type;
                                 }
-                                else if (item.F_DealType.ToUpper().IndexOf("RENEW") != -1)
+                                else if (item.F_DealType.ToUpper() == "RENEW")
                                 {
                                     var fileTypeAndData = GetFileDataAndType(item, RenewFilelist);
                                     mailData.F_FileData = fileTypeAndData.Data;
@@ -261,9 +277,9 @@ namespace CommonResponseCenter.Responser
                                 mailData.F_LastModifiedUser = "Admin";
                                 if (mailData.F_FileData != null)
                                 {
-                                    long FID = DataInsertToTable(mailData);
+                                    long FID = DataInsertToTableDB(mailData);
                                     if (FID > 0)
-                                        Updateishavefile(InsertId, FID);
+                                        UpdateishavefileDB(InsertId, FID);
                                 }
                                 else
                                     FailedList.Add(item.CompanyName + "未找到文件，请检查");
@@ -271,7 +287,7 @@ namespace CommonResponseCenter.Responser
                         }
 
                         //===========================================BulkInsert========================================================
-                        //SqlBulkCopy SqlBulkCopy =new SqlBulkCopy( SqlHelper.CONNECTSTRING);
+                        //SqlBulkCopy SqlBulkCopy =new SqlBulkCopy( SqlHelper.MyCONNECTSTRING);
                         //SqlBulkCopy.DestinationTableName = "IridianDev2.dbo.OnlieMapping";
                         //DataTable dt = ToDataTable(MailInfoList);
                         //for (int i = 0; i < dt.Columns.Count; i++)
@@ -300,15 +316,62 @@ namespace CommonResponseCenter.Responser
             }
         }
 
+        public string GetCount()
+        {
+            List<string> DebugList= new List<string>();
+            List<string> NewList = new List<string>();
+            List<string> RenewList = new List<string>();
+
+            int debugcount = 0, newcount = 0 ,renewcount = 0;
+            var txtSearch_CompanyName = PostObjectStringValue("txtSearch_CompanyName").Trim();
+            var textSearch_Emailcontent = PostObjectStringValue("textSearch_Emailcontent").Trim();
+            var txtSearch_ClassName = PostObjectStringValue("txtSearch_ClassName").Trim();
+            DateTime? textSearch_DateStart = PostObjectDateValue("textSearch_DateStart");
+            DateTime? textSearch_DateEnd = PostObjectDateValue("textSearch_DateEnd");
+            try
+            {
+                DataSet ds = GetMappinglistdataSet(txtSearch_CompanyName, textSearch_Emailcontent, txtSearch_ClassName, textSearch_DateStart, textSearch_DateEnd);
+                //=============================================================================================
+                if (ds.Tables[0].Rows.Count > 0)
+                {
+                    for (int i = 0; i < ds.Tables[0].Rows.Count; i++)
+                    {
+                        if (ds.Tables[0].Rows[i][5].ToString().ToUpper() == "DEBUG" && !DebugList.Contains(ds.Tables[0].Rows[i][1]))
+                        {
+                            debugcount++;
+                            DebugList.Add(ds.Tables[0].Rows[i][1].ToString());
+                        }
+                        else if (ds.Tables[0].Rows[i][5].ToString().ToUpper() == "NEW" && !NewList.Contains(ds.Tables[0].Rows[i][1]))
+                        {
+                            newcount++;
+                            NewList.Add(ds.Tables[0].Rows[i][1].ToString());
+                        }
+                        else if (ds.Tables[0].Rows[i][5].ToString().ToUpper() == "RENEW" && !RenewList.Contains(ds.Tables[0].Rows[i][1]))
+                        {
+                            renewcount++;
+                            RenewList.Add(ds.Tables[0].Rows[i][1].ToString());
+                        }
+                    }
+                    return GetJsonString("type", "Debug: " + debugcount + ", " + "New: " + newcount + ", " + "Renew: " + renewcount);
+                }
+                else
+                    return GetJsonString("type", "0,0,0");
+            }
+            catch
+            {
+                return GetJsonString("type", "0,0,0");
+            }
+        }
+
         private fileTypeAndData GetFileDataAndType(MailInfo mailInfo, List<FilePath> filePathlist)
         {
             fileTypeAndData fileTypeAndData = new fileTypeAndData();
             FilePath filePath = new FilePath();
-            string ComapanyName = mailInfo.CompanyName.ToUpper().Replace(".", "");
+            string ComapanyName = mailInfo.CompanyName.ToUpper().Replace(".", "").Replace("/", "").Replace(" ", "");
             string thisfilepath = "";
             foreach (var item in filePathlist)
             {
-                if (item.Path.Substring(item.Path.LastIndexOf("\\") + 1).ToUpper().Replace(".", "") == ComapanyName)
+                if (item.Path.Substring(item.Path.LastIndexOf("\\") + 1).ToUpper().Replace(".", "").Replace("/","").Replace(" ","") == ComapanyName)
                 {
                     for (int i = 0; i < item.ChildPath.Count; i++)
                     {
@@ -327,9 +390,9 @@ namespace CommonResponseCenter.Responser
                                 fileTypeAndData.Type = 3;
                             else if (item.ChildPath[i].Type.ToUpper().IndexOf("CSV") != -1)
                                 fileTypeAndData.Type = 4;
+                            break;
                         }
                     }
-                    break;
                 }
             }
             if (thisfilepath != "")
@@ -351,31 +414,7 @@ namespace CommonResponseCenter.Responser
                 var txtSearch_ClassName = PostObjectStringValue("txtSearch_ClassName").Trim();
                 DateTime? textSearch_DateStart = PostObjectDateValue("textSearch_DateStart");
                 DateTime? textSearch_DateEnd = PostObjectDateValue("textSearch_DateEnd");
-                if (txtSearch_CompanyName != "")
-                    txtSearch_CompanyName = "%" + escapeSqlString(txtSearch_CompanyName) + "%";
-                if (textSearch_Emailcontent != "")
-                    textSearch_Emailcontent = "%" + escapeSqlString(textSearch_Emailcontent) + "%";
-                //=====================================数据库操作==============================================
-                ///sql///
-                string sqltxt = "select * from IridianDev2.dbo.OnlieMapping  Where 1 = 1 "
-                    + "AND(@txtSearch_CompanyName = '' OR CompanyName like @txtSearch_CompanyName escape '/')"
-                    + "AND(@txtSearch_ClassName = '' OR F_ClassName like @txtSearch_ClassName escape '/') "
-                    + "AND(@textSearch_DateStart is NULL OR F_UploadDate >= @textSearch_DateStart)"
-                    + "AND(@textSearch_DateEnd IS NULL OR F_UploadDate <= @textSearch_DateEnd)"
-                    + "AND(@textSearch_Emailcontent = '' OR F_FaildReason like @textSearch_Emailcontent escape '/')"
-                    + "Order By CompanyName,F_FileType";
-
-                //AND(@From is NULL OR Coalesce(A.LastModifiedDate, A.CreatedDate) >= @From)
-                //AND(@To IS NULL OR Coalesce(A.LastModifiedDate, A.CreatedDate) <= @To)
-                //AND(@ApplicantName = '' OR CompanyName like @ApplicantName escape '/')
-
-                ///dataset
-                DataSet ds = SqlHelper.ExecuteDataset(SqlHelper.CONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@txtSearch_CompanyName", txtSearch_CompanyName)
-                , new SqlParameter("@textSearch_DateStart", (textSearch_DateStart.HasValue ? textSearch_DateStart.Value : Convert.DBNull))
-                , new SqlParameter("@textSearch_DateEnd", (textSearch_DateEnd.HasValue ? textSearch_DateEnd.Value : Convert.DBNull))
-                , new SqlParameter("@textSearch_Emailcontent", textSearch_Emailcontent)
-                , new SqlParameter("@txtSearch_ClassName", txtSearch_ClassName));
-
+                DataSet ds = GetMappinglistdataSet(txtSearch_CompanyName, textSearch_Emailcontent, txtSearch_ClassName, textSearch_DateStart, textSearch_DateEnd);
                 //=============================================================================================
                 if (ds.Tables[0].Rows.Count > 0)
                     return GetJsonString("type", ds.Tables[0], "MappingDataList", ds.Tables[0].Rows[0]);
@@ -388,6 +427,34 @@ namespace CommonResponseCenter.Responser
             }
         }
 
+        private DataSet GetMappinglistdataSet(string txtSearch_CompanyName,string textSearch_Emailcontent,string txtSearch_ClassName, DateTime? textSearch_DateStart, DateTime? textSearch_DateEnd)
+        {
+            if (txtSearch_CompanyName != "")
+                txtSearch_CompanyName = "%" + escapeSqlString(txtSearch_CompanyName) + "%";
+            if (textSearch_Emailcontent != "")
+                textSearch_Emailcontent = "%" + escapeSqlString(textSearch_Emailcontent) + "%";
+            //=====================================数据库操作==============================================
+            ///sql///
+            string sqltxt = "select * from IridianDev2.dbo.OnlieMapping  Where 1 = 1 "
+                + "AND(@txtSearch_CompanyName = '' OR CompanyName like @txtSearch_CompanyName escape '/')"
+                + "AND(@txtSearch_ClassName = '' OR F_ClassName like @txtSearch_ClassName escape '/') "
+                + "AND(@textSearch_DateStart is NULL OR F_UploadDate >= @textSearch_DateStart)"
+                + "AND(@textSearch_DateEnd IS NULL OR F_UploadDate <= @textSearch_DateEnd)"
+                + "AND(@textSearch_Emailcontent = '' OR F_FaildReason like @textSearch_Emailcontent escape '/')"
+                + "Order By F_DealType,CompanyName";
+
+            //AND(@From is NULL OR Coalesce(A.LastModifiedDate, A.CreatedDate) >= @From)
+            //AND(@To IS NULL OR Coalesce(A.LastModifiedDate, A.CreatedDate) <= @To)
+            //AND(@ApplicantName = '' OR CompanyName like @ApplicantName escape '/')
+
+            ///dataset
+            DataSet ds = SqlHelper.ExecuteDataset(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@txtSearch_CompanyName", txtSearch_CompanyName)
+            , new SqlParameter("@textSearch_DateStart", (textSearch_DateStart.HasValue ? textSearch_DateStart.Value : Convert.DBNull))
+            , new SqlParameter("@textSearch_DateEnd", (textSearch_DateEnd.HasValue ? textSearch_DateEnd.Value : Convert.DBNull))
+            , new SqlParameter("@textSearch_Emailcontent", textSearch_Emailcontent)
+            , new SqlParameter("@txtSearch_ClassName", txtSearch_ClassName));
+            return ds;
+        }
         //public string GetMailData()
         //{
         //    var DataF_ID = Convert.ToInt64(PostObjectStringValue("DataF_ID"));
@@ -397,7 +464,7 @@ namespace CommonResponseCenter.Responser
         //        try
         //        {
         //            string sqltxt = "select F_FileData,F_FileType from IridianDev2.dbo.OnlinemappingFileData  Where F_ID = @DataF_ID";
-        //            DataSet ds = SqlHelper.ExecuteDataset(SqlHelper.CONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@DataF_ID", DataF_ID));
+        //            DataSet ds = SqlHelper.ExecuteDataset(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@DataF_ID", DataF_ID));
         //            if (ds.Tables[0].Rows.Count > 0)
         //                return GetJsonString("type", ds.Tables[0]);
         //            else
@@ -420,6 +487,7 @@ namespace CommonResponseCenter.Responser
             var input_Result = PostObjectStringValue("input_Result").Trim();
             var input_WeakEndingDate = PostObjectDateValue("input_WeakEndingDate");
             var input_FileType = PostObjectStringValue("input_FileType").Trim();
+            var input_ChangeDetails = PostObjectStringValue("input_ChangeDetails").Trim();
 
             long Insert_FID = -1;
             try
@@ -427,19 +495,20 @@ namespace CommonResponseCenter.Responser
                 MailInfo mailInfo = new MailInfo();
                 mailInfo.F_ClassName = input_ClassName;
                 mailInfo.CompanyName = input_CompanyName;
-                string CompanyId = getCompanyIdbyName(input_CompanyName);
+                string CompanyId = GetCompanyIdbyNameDB(input_CompanyName);
                 mailInfo.F_UploadDate = DateTime.Now.Date;
                 mailInfo.F_FileType = Convert.ToInt32(input_FileType);
                 mailInfo.F_LastModifiedTime = DateTime.Now;
                 mailInfo.F_IshaveFile = 0;
                 mailInfo.F_LastModifiedUser = "Admin";
                 mailInfo.F_FileEndingDate = input_WeakEndingDate;
-                mailInfo.F_ID = Inserttotable(mailInfo);
+                mailInfo.F_ChangeDetails = input_ChangeDetails;
+                mailInfo.F_ID = InserttotableDB(mailInfo);
 
-                long DataF_ID = InserttoData(mailInfo);
+                long DataF_ID = InserttoDataDB(mailInfo);
                 if (DataF_ID > 0)
                 {
-                    Updateishavefile(mailInfo.F_ID , DataF_ID);
+                    UpdateishavefileDB(mailInfo.F_ID , DataF_ID);
                 }
             }
             catch (Exception ex)
@@ -463,10 +532,10 @@ namespace CommonResponseCenter.Responser
             };
             try
             {
-                int i = InserttoData(mailInfo);
+                int i = InserttoDataDB(mailInfo);
                 if (i > 0)
                 {
-                    Updateishavefile(F_ID, i);
+                    UpdateishavefileDB(F_ID, i);
                     return GetJsonString("type", i);
                 }
                 return GetJsonString("Error", CompanyName + " 的数据提交失败了，请重试或联系管理员！");
@@ -489,14 +558,14 @@ namespace CommonResponseCenter.Responser
             };
             try
             {
-                int i = InserttoData(mailInfo);
+                int i = InserttoDataDB(mailInfo);
                 if (i > 0)
                 {
-                    Updateishavefile(F_ID, i);
+                    UpdateishavefileDB(F_ID, i);
                 }
                 if (DataF_ID > 0)
                 {
-                    DeleteData(DataF_ID);
+                    DeleteDataDB(DataF_ID);
                 }
                 return GetJsonString("type", "操作成功。");
             }
@@ -514,11 +583,11 @@ namespace CommonResponseCenter.Responser
             {
                 if (F_ID > 0)
                 {
-                    DeleteMail(F_ID);
+                    DeleteMailDB(F_ID);
                 }
                 if (DataF_ID > 0)
                 {
-                    DeleteData(DataF_ID);
+                    DeleteDataDB(DataF_ID);
                 }
             }
             catch(Exception ex)
@@ -528,6 +597,78 @@ namespace CommonResponseCenter.Responser
             return GetJsonString("Type", "删除成功");
         }
 
+        public string ChangeClassName()
+        {
+            var F_ID = Convert.ToInt64(PostObjectStringValue("F_ID"));
+            var F_ClassName = Convert.ToString(PostObjectStringValue("F_ClassName")).Trim();
+            try
+            {
+                if (F_ID > 0 && F_ClassName != "")
+                {
+                    ChangeClassNameDB(F_ID, F_ClassName);
+                }
+                else
+                {
+                    return GetJsonString("Error", "请输入有效类名");
+                }
+            }
+            catch (Exception ex)
+            {
+                return GetJsonString("Error", ex.Message);
+            }
+            return GetJsonString("Type", "类名已经修改为" + F_ClassName + ".");
+        }
+
+        
+        public string GetImageAjax()
+        {
+            var filedata = CurrentContext;
+            var file = CurrentContext.Request.Files[0];
+            var F_ID = Convert.ToInt64(CurrentContext.Request.Form["F_ID"]);
+
+            try
+            {
+                Byte[] fileData = new Byte[] { };
+                if (file != null)
+                {
+                    Stream stream = file.InputStream;
+                    BinaryReader br = new BinaryReader(stream);
+                    fileData = br.ReadBytes((int)stream.Length);
+                    stream.Close();
+                    if (filedata != null)
+                    {
+                        UpdateImageDataDB(F_ID, fileData);
+                    }
+                }
+                return GetJsonString("Type", "Success");
+            }
+            catch (Exception ex)
+            {
+                return GetJsonString("Error", ex.Message);
+            }
+
+        }
+        public string ChangeDetails()
+        {
+            var F_ID = Convert.ToInt64(PostObjectStringValue("F_ID"));
+            var F_ChangeDetails = Convert.ToString(PostObjectStringValue("F_ChangeDetails")).Trim();
+            try
+            {
+                if (F_ID > 0 )
+                {
+                    ChangeDetailsDB(F_ID, F_ChangeDetails);
+                }
+                else
+                {
+                    return GetJsonString("Error", "ID未识别或不存在");
+                }
+            }
+            catch (Exception ex)
+            {
+                return GetJsonString("Error", ex.Message);
+            }
+            return GetJsonString("Type", "Success");
+        }
         /// <summary>
         /// Convert a List{T} to a DataTable.
         /// </summary>
@@ -588,11 +729,11 @@ namespace CommonResponseCenter.Responser
             return !t.IsValueType || (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
 
-        private string getCompanyIdbyName(string CompanyName)
+        private string GetCompanyIdbyNameDB(string CompanyName)
         {
             string CompanyId = "0";
             string query = "select CompanyID,CompanyName from IridianDev2.dbo.AccountingFileClasses where CompanyName =  @CompanyName";
-            DataSet ds = SqlHelper.ExecuteDataset(SqlHelper.CONNECTSTRING, CommandType.Text, query, new SqlParameter("@CompanyName", CompanyName));
+            DataSet ds = SqlHelper.ExecuteDataset(SqlHelper.MyCONNECTSTRING, CommandType.Text, query, new SqlParameter("@CompanyName", CompanyName));
             if (ds != null)
             {
                 if (ds.Tables[0].Rows.Count > 0)
@@ -601,28 +742,29 @@ namespace CommonResponseCenter.Responser
             return CompanyId;
         }
 
-        private int Inserttotable(MailInfo mailInfo)
+        private int InserttotableDB(MailInfo mailInfo)
         {
-            string sqltxt = "insert into IridianDev2.dbo.OnlieMapping(CompanyName,CompanyID,F_FaildReason,F_ClassName,F_DealType,F_DealResult,F_UploadDate,F_FileEndingDate,F_FileType,F_LastModifiedTime,F_LastModifiedUser,F_IshaveFile)"
-                    + " values(@CompanyName,@CompanyID,@F_FaildReason,@F_ClassName,@F_DealType,@F_DealResult,@F_UploadDate,@F_FileEndingDate,@F_FileType,@F_LastModifiedTime,@F_LastModifiedUser ,@F_IshaveFile) SELECT CAST(scope_identity() AS int)";
+            string sqltxt = "insert into IridianDev2.dbo.OnlieMapping(CompanyName,CompanyID,F_FaildReason,F_ClassName,F_DealType,F_DealResult,F_UploadDate,F_FileEndingDate,F_FileType,F_LastModifiedTime,F_LastModifiedUser,F_IshaveFile,F_ChangeDetails)"
+                    + " values(@CompanyName,@CompanyID,@F_FaildReason,@F_ClassName,@F_DealType,@F_DealResult,@F_UploadDate,@F_FileEndingDate,@F_FileType,@F_LastModifiedTime,@F_LastModifiedUser ,@F_IshaveFile,@F_ChangeDetails) SELECT CAST(scope_identity() AS int)";
 
-            int i = (int)SqlHelper.ExecuteScalar(SqlHelper.CONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@CompanyName", mailInfo.CompanyName)
-                , new SqlParameter("@CompanyID", (mailInfo.CompanyID==null?"":mailInfo.CompanyID))
+            int i = (int)SqlHelper.ExecuteScalar(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@CompanyName", mailInfo.CompanyName)
+                , new SqlParameter("@CompanyID", (mailInfo.CompanyID == null ? "" : mailInfo.CompanyID))
                 , new SqlParameter("@F_FaildReason", (mailInfo.F_FaildReason == null ? "" : mailInfo.F_FaildReason))
                 , new SqlParameter("@F_ClassName", (mailInfo.F_ClassName == null ? "" : mailInfo.F_ClassName))
                 , new SqlParameter("@F_DealType", (mailInfo.F_DealType == null ? "" : mailInfo.F_DealType))
                 , new SqlParameter("@F_DealResult", (mailInfo.F_DealResult == null ? "" : mailInfo.F_DealResult))
-                , new SqlParameter("@F_UploadDate", (mailInfo.F_UploadDate.HasValue ? mailInfo.F_UploadDate.Value : Convert.DBNull))
-                , new SqlParameter("@F_FileEndingDate", (mailInfo.F_FileEndingDate != DateTime.MinValue ? mailInfo.F_FileEndingDate.Value : Convert.DBNull))
+                , new SqlParameter("@F_UploadDate", (mailInfo.F_UploadDate.HasValue ? mailInfo.F_UploadDate : Convert.DBNull))
+                , new SqlParameter("@F_FileEndingDate", (mailInfo.F_FileEndingDate != DateTime.MinValue && mailInfo.F_FileEndingDate.HasValue ? mailInfo.F_FileEndingDate : Convert.DBNull))
                 , new SqlParameter("@F_FileType", mailInfo.F_FileType)
-                , new SqlParameter("@F_LastModifiedTime", (mailInfo.F_LastModifiedTime != DateTime.MinValue ? mailInfo.F_LastModifiedTime.Value : new DateTime(1900, 1, 1)))
+                , new SqlParameter("@F_LastModifiedTime", (mailInfo.F_LastModifiedTime != DateTime.MinValue ? mailInfo.F_LastModifiedTime : new DateTime(1900, 1, 1)))
                 , new SqlParameter("@F_LastModifiedUser", (mailInfo.F_LastModifiedUser == null ? "" : mailInfo.F_LastModifiedUser))
                 , new SqlParameter("@F_IshaveFile", mailInfo.F_IshaveFile)
+                , new SqlParameter("@F_ChangeDetails",mailInfo.F_ChangeDetails)
                 );
             return i;
         }
 
-        private int InserttoData(MailInfo mailInfo)
+        private int InserttoDataDB(MailInfo mailInfo)
         {
             MailData mailData = new MailData();
             mailData.EmailFID = mailInfo.F_ID;
@@ -659,22 +801,30 @@ namespace CommonResponseCenter.Responser
             var fileTypeAndData = GetFileDataAndType(mailInfo, Filelist);
             mailData.F_FileData = fileTypeAndData.Data;
             mailData.F_FileType = fileTypeAndData.Type;
-            return DataInsertToTable(mailData);
+            try
+            {
+                return DataInsertToTableDB(mailData);
+            }
+            catch
+            {
+                return -1;
+            }
+
         }
 
-        private void Updateishavefile(long F_ID, long State)
+        private void UpdateishavefileDB(long F_ID, long State)
         {
             string sqltxt = "update IridianDev2.dbo.OnlieMapping set F_IshaveFile = @F_IshaveFile  where F_ID = @F_ID";
-            SqlHelper.ExecuteNonQuery(SqlHelper.CONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_IshaveFile", State)
+            SqlHelper.ExecuteNonQuery(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_IshaveFile", State)
                 , new SqlParameter("@F_ID", F_ID));
         }
 
-        private int DataInsertToTable(MailData mailData)
+        private int DataInsertToTableDB(MailData mailData)
         {
             string sqltxt = "insert into IridianDev2.dbo.OnlinemappingFileData(EmailFID,F_UploadDate,F_LastModifiedDate,F_LastModifiedUser,F_FileType,F_FileData)"
                    + " values(@EmailFID,@F_UploadDate,@F_LastModifiedDate,@F_LastModifiedUser,@F_FileType,@F_FileData) SELECT CAST(scope_identity() AS int)";
 
-            int i = (int)SqlHelper.ExecuteScalar(SqlHelper.CONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@EmailFID", mailData.EmailFID)
+            int i = (int)SqlHelper.ExecuteScalar(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@EmailFID", mailData.EmailFID)
                 , new SqlParameter("@F_UploadDate", (mailData.F_UploadDate.HasValue ? mailData.F_UploadDate.Value : Convert.DBNull))
                 , new SqlParameter("@F_LastModifiedDate", (mailData.F_LastModifiedDate.HasValue ? mailData.F_LastModifiedDate.Value : Convert.DBNull))
                 , new SqlParameter("@F_LastModifiedUser", mailData.F_LastModifiedUser)
@@ -683,16 +833,35 @@ namespace CommonResponseCenter.Responser
             return i;
         }
 
-        private void DeleteMail(long F_ID)
+        private void DeleteMailDB(long F_ID)
         {
             string sqltxt = "delete from IridianDev2.dbo.OnlieMapping where F_ID=@F_ID";
-            SqlHelper.ExecuteNonQuery(SqlHelper.CONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_ID", F_ID));
+            SqlHelper.ExecuteNonQuery(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_ID", F_ID));
         }
 
-        private void DeleteData(long F_ID)
+        private void DeleteDataDB(long F_ID)
         {
             string sqltxt = "delete from IridianDev2.dbo.OnlinemappingFileData where F_ID=@F_ID";
-            SqlHelper.ExecuteNonQuery(SqlHelper.CONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_ID", F_ID));
+            SqlHelper.ExecuteNonQuery(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_ID", F_ID));
+        }
+
+        private void ChangeClassNameDB(long F_ID,string newClassName)
+        {
+            string sqltxt = "update IridianDev2.dbo.OnlieMapping set F_ClassName = @F_ClassName  where F_ID = @F_ID";
+            SqlHelper.ExecuteNonQuery(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_ClassName", newClassName)
+                , new SqlParameter("@F_ID", F_ID));
+        }
+        private void ChangeDetailsDB(long F_ID, string details)
+        {
+            string sqltxt = "update IridianDev2.dbo.OnlieMapping set F_ChangeDetails = @F_ChangeDetails  where F_ID = @F_ID";
+            SqlHelper.ExecuteNonQuery(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_ChangeDetails", details)
+                , new SqlParameter("@F_ID", F_ID));
+        }
+        private void UpdateImageDataDB(long F_ID, Byte[] fileData)
+        {
+            string sqltxt = "update IridianDev2.dbo.OnlieMapping set F_DetailImg = @F_DetailImg  where F_ID = @F_ID";
+            SqlHelper.ExecuteNonQuery(SqlHelper.MyCONNECTSTRING, CommandType.Text, sqltxt, new SqlParameter("@F_DetailImg", fileData)
+                , new SqlParameter("@F_ID", F_ID));
         }
 
         private class MailInfo
@@ -719,6 +888,7 @@ namespace CommonResponseCenter.Responser
             /// 0,没有文件绑定||>0,绑定文件的FID
             /// </summary>
             public long F_IshaveFile { get; set; }
+            public string F_ChangeDetails { get; set; }
         }
 
         private class MailData

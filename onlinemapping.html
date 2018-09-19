@@ -40,6 +40,7 @@
                         uploadstate: 0,
                         uploadfilename: '',
                         countstring: '',
+                        imagedata: '',
 
                         input_CompanyName: '',
                         input_ClassName: '',
@@ -48,6 +49,7 @@
                         input_Result: '',
                         input_WeakEndingDate: '',
                         input_FileType: 0,
+                        input_ChangeDetails: '',
 
                         filetypeselects: [
                             { value: "TXT" },
@@ -294,12 +296,15 @@
                                 }
                             })
                         },
-                        addDebugImage: function (F_ID) {
+                        addDebugImage: function (F_ID, index) {
+                            var value = $(this.$el).find('#imgLocal');
+                            console.log(this.imagedata);//图片信息就在files[0]里面
+                            let imgFile = $(this.$el).find('#imgLocal')[0].files[0];//取到上传的图片
                             if (!confirm("确认上传文件？")) {
                                 return false;
                             }
-                            let imgFile = $(this.$el).find('#imgLocal')[0].files[0];//取到上传的图片
-                            //console.log($(this.$el).find('#imgLocal')[0].files);//图片信息就在files[0]里面
+                            //console.log($(this.$el).find('#imgLocal')[index].files);//图片信息就在files[0]里面
+                            alert("");
                             let postData = new FormData();
                             postData.append('file', imgFile);
                             postData.append('F_ID', F_ID);
@@ -311,7 +316,7 @@
 
                             };
                             ajax.send(postData);
-                            alert(ajax.response);
+                            //alert(Response);
                             location.reload();
                         },
                         showDebugImage: function (F_ID) {
@@ -330,8 +335,9 @@
                             });
 
                         },
-                        selectImg() {
-                            let form = document.getElementById('imgLocal');
+                        selectImg(fileDom) {
+                            alert(fileDom);
+                            this.imagedata = fileDom.files[0];
                         },
                         DeleteItem: function (F_ID, DataF_ID, index) {
                             var that = this;
@@ -363,7 +369,7 @@
                 <input type="date" class="btn-warning btn-sm " @change="getFile">
                 <div v-if="uploadresult!=''">{{ uploadresult }}</div>
                 <div v-else><label class="text-warning" for="UpLoad">The selected date must be the same as the folder date.</label></div>
-                <input type="button" id="Btn_UploadFile" class="btn-primary" value="uploadfile" @click="uploadxls" />
+                <input type="button" id="Btn_UploadFile" class="btn-primary" value="uploadfile" @click="uploadxls()" />
                 <div class="text-warning" v-show="uploadstate==1">正在上传中.....</div>
                 <div class="text-danger" v-show="uploadstate==-1">上传失败.....</div>
             </div>
@@ -390,7 +396,7 @@
             <hr />
         </form>
         <div>
-            <button @click="showinput">手动输入记录的模块</button>
+            <button @click="showinput()">手动输入记录的模块</button>
             <div v-show="isinputshow">
                 <table class="table table-bordered table-hover">
                     <tr class="text-center">
@@ -409,15 +415,18 @@
                         <td><input id="input_ClassName" v-model="input_ClassName" type="text" placeholder="Class Name"></td>
                         <td><input id="input_FailedType" v-model="input_FailedType" type="text" placeholder="Failed Type"></td>
                         <td><input id="input_Result" v-model="input_Result" type="text" placeholder="Result"></td>
-                        <td><input id="input_WeakEndingDate" v-model="input_WeakEndingDate" type="date">{{input_WeakEndingDate}}</td>
+                        <td><input id="input_WeakEndingDate" v-model="input_WeakEndingDate" type="date"></td>
 
                         <td>
                             <select @change="getFiletypeSelection">
-                                <option v-for=" (item,index) in filetypeselects" v-model="item.value">{{item.value}}</option>
+                                <option v-for=" (item,index) in filetypeselects">{{item.value}}</option>
                             </select>
                         </td>
+                        <td>
+                            <input id="input_ChangeDetails" v-model="input_ChangeDetails" type="text" placeholder="ChangeDetails">
+                        </td>
                     </tr>
-                    <tr> <td colspan="9" class="text-right">提交：<button id="Btn_submit" class="btn-accept btn-sm" @click="Submitsingle()">提交信息 </button></td></tr>
+                    <tr> <td colspan="10" class="text-right">提交：<button id="Btn_submit" class="btn-accept btn-sm" @click="Submitsingle()">提交信息 </button></td></tr>
                 </table>
             </div>
         </div>
@@ -468,15 +477,15 @@
                     <div>
                         <textarea class="fulfill_cancel" style="resize:none;width:100%;height:100%;" v-model="item.F_ChangeDetails"></textarea>
                     </div>
-                    <input class="input-loc-img" name="imgLocal" id="imgLocal" type='file' accept="image/*" @change="selectImg" />
+                    <input class="es-image" name="imgLocal" id="imgLocal" type='file' accept="image/*" @change="selectImg(this)" />
                     <div v-if="item.F_DetailImg != '' && item.F_DetailImg != null">
                         <button @click="showDebugImage(item.F_ID)" class="text-success">查看图片</button>
-                        <button @click="addDebugImage(item.F_ID)" class="text-warning">修改图片</button>
+                        <button @click="addDebugImage(item.F_ID,index)" class="text-warning">修改图片</button>
                         <button @click="addtoChangedDetails(item.F_ID,item.F_ChangeDetails)" style="float:right">修改</button>
                     </div>
                     <div v-else>
                         <button @click="addtoChangedDetails(item.F_ID,item.F_ChangeDetails)" style="float:right">修改</button>
-                        <button @click="addDebugImage(item.F_ID)" class="text-warning">添加图片</button>
+                        <button @click="addDebugImage(item.F_ID,index)" class="text-warning">添加图片</button>
                     </div>
                 </td>
             </tr>
