@@ -298,13 +298,11 @@
                         },
                         addDebugImage: function (F_ID, index) {
                             var value = $(this.$el).find('#imgLocal');
-                            console.log(this.imagedata);//图片信息就在files[0]里面
+                            //console.log(this.imagedata);//图片信息就在files[0]里面
                             let imgFile = $(this.$el).find('#imgLocal')[0].files[0];//取到上传的图片
                             if (!confirm("确认上传文件？")) {
                                 return false;
                             }
-                            //console.log($(this.$el).find('#imgLocal')[index].files);//图片信息就在files[0]里面
-                            alert("");
                             let postData = new FormData();
                             postData.append('file', imgFile);
                             postData.append('F_ID', F_ID);
@@ -408,7 +406,7 @@
                         <th>WeakEndingDate</th>
 
                         <th>File Type</th>
-                        <th>Details</th>
+                        <th> Details</th>
                     </tr>
                     <tr class="text-left">
                         <td> <input id="input_CompanyName" v-model="input_CompanyName" type="text" placeholder="Company Name"></td>
@@ -444,7 +442,14 @@
                 <th>Upload Date</th>
                 <th>WeakEndingDate</th>
                 <th>File Type</th>
-                <th>Details</th>
+                <th>
+                    Details
+                    <div>
+                        <input class="es-image" name="imgLocal" id="imgLocal" type='file' accept="image/*" style="display:none" @change="selectImg(this)" />
+                        <input type="text" name="path" id="path" onfocus="jQuery('#attachment').click()" />
+                        <input type="button" value="选择上传的图片" onclick="jQuery('#imgLocal').click()" />
+                    </div>
+                </th>
             </tr>
             <tr class="text-left" v-for="(item,index) in mappingdata" :key="item.F_ID">
                 <td>
@@ -478,7 +483,6 @@
                     <div>
                         <textarea class="fulfill_cancel" style="resize:none;width:100%;height:100%;" v-model="item.F_ChangeDetails"></textarea>
                     </div>
-                    <input class="es-image" name="imgLocal" id="imgLocal" type='file' accept="image/*" @change="selectImg(this)" />
                     <div v-if="item.F_DetailImg != '' && item.F_DetailImg != null">
                         <button @click="showDebugImage(item.F_ID)" class="text-success">查看图片</button>
                         <button @click="addDebugImage(item.F_ID,index)" class="text-warning">修改图片</button>
