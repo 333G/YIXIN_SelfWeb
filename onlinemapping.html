@@ -334,8 +334,9 @@
 
                         },
                         selectImg(fileDom) {
-                            alert(fileDom);
-                            this.imagedata = fileDom.files[0];
+                            //alert(fileDom);
+                            //this.imagedata = fileDom.files[0];
+                            document.getElementById("path").value = $(this.$el).find('#imgLocal')[0].files[0].name;
                         },
                         DeleteItem: function (F_ID, DataF_ID, index) {
                             var that = this;
@@ -446,7 +447,7 @@
                     Details
                     <div>
                         <input class="es-image" name="imgLocal" id="imgLocal" type='file' accept="image/*" style="display:none" @change="selectImg(this)" />
-                        <input type="text" name="path" id="path" onfocus="jQuery('#attachment').click()" />
+                        <input type="text" style="text-size-adjust:auto" name="path" id="path" readonly="readonly" onfocus="jQuery('#attachment').click()" />
                         <input type="button" value="选择上传的图片" onclick="jQuery('#imgLocal').click()" />
                     </div>
                 </th>
@@ -467,7 +468,7 @@
                 <td>{{item.F_DealType}}</td>
                 <td style="text-align:center;border:dashed;color:slateblue;">{{item.F_DealResult}}</td>
                 <td>{{item.F_UploadDate}}</td>
-                <td><input type="date" v-model="item.F_FileEndingDate"/>{{item.F_FileEndingDate}}</td>
+                <td><input type="date" v-model="item.F_FileEndingDate"/></td>
 
                 <td>
                     <button v-if="(item.F_FileType==0)" @click="showfile(item.F_IshaveFile,item.F_ID ,item.CompanyName)" class="bs-fix-btn-locality ">TXT</button>
